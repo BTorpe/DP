@@ -1,8 +1,10 @@
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
-
-N = 50_000
+# ============================================================
+# Opgave 2.1 - The model
+# ============================================================
+N = 50000
 
 # Education
 p_e = [0.40, 0.35, 0.25]
@@ -23,15 +25,69 @@ y_SU = 0.45
 rho = 0.60
 y_floor = 0.35
 
+# Random number generator
 rng = np.random.default_rng(123)
 
+# Education
 education = rng.choice(
     [0, 1, 2],
     size=N,
     p=p_e)
 
-education[0] = 2
-
+# Ages
 ages = np.arange(18, 66)
-print(education[:10])
-print(ages)
+
+# Education length for each individual
+education_years = np.array(S_e)[education]
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+# ============================================================
+# Opgave 2.2 - Simulate the income distribution
+# ============================================================
+
+
+# ============================================================
+# Opgave 2.3 - Compute the Gini coefficient
+# ============================================================
+
+# ============================================================
+# Opgave 2.4 - What drives inequality?
+# ============================================================
+
+# ============================================================
+# Opgave 2.5 - Extension: More risk
+# ============================================================
