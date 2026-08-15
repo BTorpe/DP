@@ -48,11 +48,7 @@ def simulate_model():
     # Education
     # --------------------------------------------------------
 
-    education = rng.choice(
-        [0, 1, 2],
-        size=N,
-        p=p_e
-    )
+    education = rng.choice([0, 1, 2], size=N, p=p_e)
 
     # Education length for each individual
     education_years = np.array(S_e)[education]
@@ -98,9 +94,7 @@ def simulate_model():
         income[in_education, t] = y_SU
 
         # Human capital is unchanged while in education
-        human_capital[in_education, t] = np.array(h_e0)[
-            education[in_education]
-        ]
+        human_capital[in_education, t] = np.array(h_e0)[education[in_education]]
 
 
         # ----------------------------------------------------
@@ -115,9 +109,7 @@ def simulate_model():
         income[first_labour_year, t] = y_floor
 
         # Initial human capital after education
-        human_capital[first_labour_year, t] = np.array(h_e0)[
-            education[first_labour_year]
-        ]
+        human_capital[first_labour_year, t] = np.array(h_e0)[education[first_labour_year] ]
 
 
         # ----------------------------------------------------
@@ -126,35 +118,22 @@ def simulate_model():
 
         if t > 0:
 
-            in_labour_market = (
-                ~in_education
-                & ~first_labour_year
-            )
+            in_labour_market = (~in_education & ~first_labour_year)
 
 
             # ------------------------------------------------
             # Labour market transitions
             # ------------------------------------------------
 
-            previous_state = state[
-                in_labour_market, t - 1
-            ]
+            previous_state = state[in_labour_market, t - 1]
 
-            random_numbers = rng.random(
-                in_labour_market.sum()
-            )
+            random_numbers = rng.random(in_labour_market.sum() )
 
             # Unemployed people finding a job
-            find_job = (
-                (previous_state == 1)
-                & (random_numbers < lambda_)
-            )
+            find_job = ((previous_state == 1) & (random_numbers < lambda_))
 
             # Employed people losing their job
-            lose_job = (
-                (previous_state == 2)
-                & (random_numbers < sigma)
-            )
+            lose_job = ((previous_state == 2)& (random_numbers < sigma))
 
             # Start from previous labour market status
             current_state = previous_state.copy()
@@ -173,39 +152,22 @@ def simulate_model():
             # Human capital shock
             # ------------------------------------------------
 
-            psi = rng.lognormal(
-                -0.5 * sigma_psi**2,
-                sigma_psi,
-                size=N
-            )
+            psi = rng.lognormal(-0.5 * sigma_psi**2,sigma_psi,size=N)
 
 
             # ------------------------------------------------
             # Human capital
             # ------------------------------------------------
 
-            previous_human_capital = human_capital[
-                in_labour_market, t - 1
-            ]
+            previous_human_capital = human_capital[in_labour_market, t - 1]
 
-            human_capital[in_labour_market, t] = np.where(
-                current_state == 2,
+            human_capital[in_labour_market, t] = np.where(current_state == 2,
 
                 # Employed
-                previous_human_capital
-                * (
-                    1
-                    + np.array(delta_e)[
-                        education[in_labour_market]
-                    ]
-                )
-                * psi[in_labour_market],
+                previous_human_capital* (1 + np.array(delta_e)[education[in_labour_market]])* psi[in_labour_market],
 
                 # Unemployed
-                previous_human_capital
-                * (1 - delta)
-                * psi[in_labour_market]
-            )
+                previous_human_capital* (1 - delta)* psi[in_labour_market])
 
 
             # ------------------------------------------------
@@ -214,44 +176,27 @@ def simulate_model():
 
             employed = current_state == 2
 
-            income[in_labour_market, t] = np.where(
-                employed,
+            income[in_labour_market, t] = np.where(employed,
 
                 # Employed income
                 human_capital[in_labour_market, t],
 
                 # Unemployed income
-                np.maximum(
-                    rho * last_job_income[
-                        in_labour_market
-                    ],
-                    y_floor
-                )
-            )
+                np.maximum(rho * last_job_income[in_labour_market],y_floor))
 
 
             # ------------------------------------------------
             # Update last job income
             # ------------------------------------------------
 
-            last_job_income[in_labour_market] = np.where(
-                employed,
-                income[in_labour_market, t],
-                last_job_income[in_labour_market]
-            )
+            last_job_income[in_labour_market] = np.where(employed, income[in_labour_market, t],last_job_income[in_labour_market])
 
 
     # ========================================================
-    # Return results
+    # Return results to make the code run easier when further codeing
     # ========================================================
 
-    return (
-        education,
-        ages,
-        state,
-        human_capital,
-        income
-    )
+    return (education, ages,state, human_capital, income)
 # ============================================================
 # Opgave 2.2 - Simulate the income distribution
 # ============================================================
