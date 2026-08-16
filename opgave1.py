@@ -24,12 +24,7 @@ def load_dst(table, variables, value_name):
     """
 
     # a. download
-    params = {
-        'table': table,
-        'format': 'BULK',
-        'lang': 'en',
-        'variables': variables,
-    }
+    params = {'table': table,'format': 'BULK', 'lang': 'en', 'variables': variables, }
     df = DstApi(table).get_data(params=params)
 
     # b. convert INDHOLD to float; '..' becomes NaN
