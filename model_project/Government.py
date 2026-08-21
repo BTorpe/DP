@@ -127,9 +127,16 @@ class GovernmentClass(ConsumerClass):
         #    .quantities() takes the nested shares (s1,w) from the solution
         if opt is None: opt = self.solve(do_print=False)
 
-        pass
+        # a. the quantities the consumer buys under the current taxes
+        x1,x2,x3 = self.quantities(opt.s1,opt.w)
 
-        # b. the lump-sum tax, plus the product tax on each good
+        # b. lump-sum tax + product tax on each good.
+        #    the product tax on good j is tau_j * p_j_pre * x_j -- the rate times
+        #    the *seller* price (eq. 5), NOT the price the consumer pays.
+        R = par.T
+        R += par.tau1*par.p1_pre*x1
+        R += par.tau2*par.p2_pre*x2
+        R += par.tau3*par.p3_pre*x3
 
         return R
 
@@ -147,7 +154,20 @@ class GovernmentClass(ConsumerClass):
 
         """
 
-        pass
+        # a. build the tax vector: rate tau on the goods in `goods`, 0 elsewhere
+        taus = {1:0.0, 2:0.0, 3:0.0}
+        for j in goods:
+            taus[j] = tau
+
+        # b. apply the taxes (this rewrites the prices the consumer faces)
+        self.set_taxes(tau1=taus[1],tau2=taus[2],tau3=taus[3])
+
+        # c. solve the consumer's problem under those taxes, once
+        opt = self.solve(do_print=False)
+
+        # d. revenue at these taxes, and the utility the consumer is left with
+        R = self.tax_revenue(opt)
+        u = opt.u
 
         return R,u
 
@@ -164,7 +184,13 @@ class GovernmentClass(ConsumerClass):
 
         """
 
-        pass
+        # a. a lump-sum tax: no product taxes, income falls by T
+        self.set_taxes(T=T)
+
+        # b. solve and read off. revenue from a lump-sum tax is simply T.
+        opt = self.solve(do_print=False)
+        R = self.tax_revenue(opt)   # equals T, but we go through eq. 5 for consistency
+        u = opt.u
 
         return R,u
 
@@ -193,7 +219,16 @@ class GovernmentClass(ConsumerClass):
 
         """
 
-        pass
+        # a. a grid over the tax rate, exactly as the grid search in section 2.1
+        tau_grid = np.linspace(0,tau_max,N)
+
+        # b. revenue at every rate on the grid
+        R_grid = np.array([self.revenue_and_utility(tau,goods)[0] for tau in tau_grid])
+
+        # c. keep the best point
+        i = np.argmax(R_grid)
+        tau = tau_grid[i]
+        R = R_grid[i]
 
         return tau,R
 
@@ -219,6 +254,19 @@ class GovernmentClass(ConsumerClass):
 
         """
 
-        pass
+        # a. the function whose root we want: revenue minus the target.
+        #    at tau=0 revenue is 0 < R_target, so f is negative at the left end;
+        #    if the instrument can reach R_target, f turns positive further out
+        #    and brentq finds the crossing.
+        f = lambda tau: self.revenue_and_utility(tau,goods)[0] - R_target
+
+        # b. if the target is above the largest revenue this instrument can raise,
+        #    f never changes sign in the bracket and brentq raises ValueError.
+        #    That is the correct answer -- the target is infeasible -- not a bug.
+        try:
+            res = optimize.root_scalar(f,bracket=bracket,method='brentq')
+            tau = res.root
+        except ValueError:
+            tau = np.nan
 
         return tau
