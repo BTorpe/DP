@@ -133,7 +133,13 @@ class ConsumerClass:
 
         par = self.par
 
-        pass
+        # a. lower nest: combine bus (x2) and train (x3) into the travel composite.
+        #    weight par.beta sits on the bus, substitution is sigma_B.
+        xB = self.ces(x2,x3,par.beta,par.sigma_B)
+
+        # b. upper nest: combine food (x1) and the travel composite xB.
+        #    weight par.alpha sits on food, substitution is sigma_A.
+        u = self.ces(x1,xB,par.alpha,par.sigma_A)
 
         return u
 
@@ -191,7 +197,11 @@ class ConsumerClass:
 
         """
 
-        pass
+        # a. nested shares -> quantities
+        x1,x2,x3 = self.quantities(s1,w)
+
+        # b. quantities -> utility
+        u = self.utility(x1,x2,x3)
 
         return u
 
@@ -237,17 +247,40 @@ class ConsumerClass:
         opt = SimpleNamespace()
 
         # a. the two grids
-        pass
+        #    both s1 and w live in [0,1]; meshgrid puts them into an NxN grid.
+        #    indexing='ij' makes s1 vary down the rows and w across the columns,
+        #    so u_grid[i,j] is the utility at (s1_vec[i], w_vec[j]).
+        s1_vec = np.linspace(0,1,N)
+        w_vec = np.linspace(0,1,N)
+        s1_grid,w_grid = np.meshgrid(s1_vec,w_vec,indexing='ij')
 
         # b. utility in every grid point
-        pass
+        #    value_of_choice is vectorised (it only uses numpy ops), so we can
+        #    hand it the whole grid at once instead of looping.
+        u_grid = self.value_of_choice(s1_grid,w_grid)
 
         # c. the best point
-        pass
+        #    argmax gives the position in the *flattened* array; unravel_index
+        #    turns that single number back into the (i,j) pair we need.
+        i,j = np.unravel_index(np.argmax(u_grid),u_grid.shape)
+        opt.s1 = s1_grid[i,j]
+        opt.w = w_grid[i,j]
+        opt.u = u_grid[i,j]
 
-        # d. results
-        # opt.s1, opt.w, opt.s2, opt.s3, opt.u
-        # opt.s1_grid, opt.w_grid, opt.u_grid (needed for the figures)
+        # d. the implied three budget shares
+        opt.s1,opt.s2,opt.s3 = self.shares(opt.s1,opt.w)
+
+        # e. keep the grids for the figures in section 2.1.2
+        opt.s1_grid = s1_grid
+        opt.w_grid = w_grid
+        opt.u_grid = u_grid
+
+        # f. how many times u was evaluated (for section 2.1.3)
+        opt.n_eval = N*N
+
+        if do_print:
+            print(f'grid search (N={N}): s1={opt.s1:.4f}, w={opt.w:.4f} '
+                  f'-> (s1,s2,s3)=({opt.s1:.4f},{opt.s2:.4f},{opt.s3:.4f}), u={opt.u:.6f}')
 
         return opt
 
@@ -276,12 +309,32 @@ class ConsumerClass:
         s0 = np.asarray(s0,dtype=float)
 
         # b. record the path with a callback
+        #    L-BFGS-B calls this once per iteration with the current point. It is
+        #    NOT called for the starting point, so we seeded s0 above ourselves.
+        #    .copy() is defensive: the solver may reuse and overwrite one array.
         path = [s0.copy()]
+        callback = lambda sk: path.append(sk.copy())
 
         # c. minimize
-        pass
+        #    objective is -u, so minimizing it maximizes utility. The bounds are
+        #    the whole constraint set -- no penalties needed. kwargs lets the
+        #    caller pass options={'ftol':...,'gtol':...} in sections 2.2.4-5.
+        res = optimize.minimize(self.objective,s0,method='L-BFGS-B',
+                                bounds=((0,1),(0,1)),callback=callback,**kwargs)
 
-        # d. results
-        # opt.s1, opt.w, opt.s2, opt.s3, opt.u, opt.path, opt.res
+        # d. unpack the solution
+        opt.res = res
+        opt.path = np.array(path)          # shape (n_iter+1, 2), for the path plots
+        opt.s1 = res.x[0]
+        opt.w = res.x[1]
+        opt.u = -res.fun                    # undo the sign flip from objective()
+        opt.s1,opt.s2,opt.s3 = self.shares(opt.s1,opt.w)
+        opt.nfev = res.nfev                 # function evaluations, for comparisons
+        opt.nit = res.nit                   # iterations
+
+        if do_print:
+            print(f'L-BFGS-B: s1={opt.s1:.4f}, w={opt.w:.4f} '
+                  f'-> (s1,s2,s3)=({opt.s1:.4f},{opt.s2:.4f},{opt.s3:.4f}), u={opt.u:.6f} '
+                  f'[{opt.nit} it, {opt.nfev} eval, success={res.success}]')
 
         return opt
