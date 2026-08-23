@@ -4,7 +4,7 @@ import numpy as np
 
 from scipy import optimize
 
-from Consumer import ConsumerClass
+from consumer import ConsumerClass
 
 class GovernmentClass(ConsumerClass):
     """ a government raising revenue from the consumer in Consumer.py
