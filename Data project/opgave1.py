@@ -20,11 +20,16 @@ def load_dst(table, variables, value_name):
     Returns:
         pd.DataFrame: cleaned data. Columns that are constant
             across all rows are dropped; 'TID' is renamed 'year'
-            and set as a sorted index.>
+            and set as a sorted index.
     """
 
     # a. download
-    params = {'table': table,'format': 'BULK', 'lang': 'en', 'variables': variables, }
+    params = {
+        'table': table,
+        'format': 'BULK',
+        'lang': 'en',
+        'variables': variables,
+    }
     df = DstApi(table).get_data(params=params)
 
     # b. convert INDHOLD to float; '..' becomes NaN
