@@ -102,7 +102,10 @@ class SolowModelClass:
         """
 
         par = self.par
-        sim = self.sim
+
+        # a fresh namespace every call, so a reference kept from an earlier call
+        # (e.g. a baseline) is not overwritten when simulate is called again
+        sim = self.sim = SimpleNamespace()
 
         if k0 is None: k0 = par.k0
 
